@@ -21,3 +21,4 @@ jobs:
       # It requires no code checkout, no dependency installation, and is instant.
       - name: Report Success
         run: echo "✅ CI check passed successfully (mocked)"
+
