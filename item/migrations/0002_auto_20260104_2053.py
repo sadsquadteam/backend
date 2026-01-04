@@ -5,17 +5,17 @@ from django.db import migrations
 
 def create_sample_tags(apps, schema_editor):
     tag_names = [
-        "bag",
-        "clothing",
-        "electronic",
-        "accessory",
-        "card",
-        "key",
-        "book / paper",
-        "stationery",
-        "sports",
-        "personal care",
-        "other",
+        "Bag",
+        "Clothing",
+        "Electronic",
+        "Accessory",
+        "Card",
+        "Key",
+        "Book/paper",
+        "Stationery",
+        "Sports",
+        "Personal care",
+        "Other",
     ]
     tag_model = apps.get_model('item', 'Tag')
     for name in tag_names:
