@@ -22,7 +22,7 @@ class UserRegistrationEndpointTests(TestCase):
     def setUp(self):
         """Set up test client."""
         self.client = APIClient()
-        self.register_url = '/api/auth/register/'
+        self.register_url = '/api/users/register/'
         cache.clear()
 
     def tearDown(self):
@@ -107,7 +107,7 @@ class OTPVerificationEndpointTests(TestCase):
     def setUp(self):
         """Set up test data."""
         self.client = APIClient()
-        self.verify_url = '/api/auth/verify/'
+        self.verify_url = '/api/users/verify/'
         cache.clear()
 
         self.email = 'verify@uni.edu'
@@ -224,7 +224,7 @@ class LoginEndpointTests(TestCase):
     def setUp(self):
         """Set up test data."""
         self.client = APIClient()
-        self.login_url = '/api/auth/login/'
+        self.login_url = '/api/users/login/'
 
         self.email = 'login@uni.edu'
         self.password = 'LoginPass123!'
@@ -329,7 +329,7 @@ class RefreshTokenEndpointTests(TestCase):
     def setUp(self):
         """Set up test data."""
         self.client = APIClient()
-        self.refresh_url = '/api/auth/refresh/'
+        self.refresh_url = '/api/users/refresh/'
 
         self.email = 'refresh@uni.edu'
         self.password = 'RefreshPass123!'
@@ -342,7 +342,7 @@ class RefreshTokenEndpointTests(TestCase):
 
         # Get initial tokens
         login_response = self.client.post(
-            '/api/auth/login/',
+            '/api/users/login/',
             {'email': self.email, 'password': self.password},
             format='json'
         )
@@ -399,7 +399,7 @@ class LogoutEndpointTests(TestCase):
     def setUp(self):
         """Set up test data."""
         self.client = APIClient()
-        self.logout_url = '/api/auth/logout/'
+        self.logout_url = '/api/users/logout/'
 
         self.email = 'logout@uni.edu'
         self.password = 'LogoutPass123!'
@@ -412,7 +412,7 @@ class LogoutEndpointTests(TestCase):
 
         # Get tokens
         login_response = self.client.post(
-            '/api/auth/login/',
+            '/api/users/login/',
             {'email': self.email, 'password': self.password},
             format='json'
         )
@@ -463,7 +463,7 @@ class ProfileEndpointTests(TestCase):
     def setUp(self):
         """Set up test data."""
         self.client = APIClient()
-        self.profile_url = '/api/auth/profile/'
+        self.profile_url = '/api/users/profile/'
 
         self.email = 'profile@uni.edu'
         self.password = 'ProfilePass123!'
@@ -476,7 +476,7 @@ class ProfileEndpointTests(TestCase):
 
         # Get token
         login_response = self.client.post(
-            '/api/auth/login/',
+            '/api/users/login/',
             {'email': self.email, 'password': self.password},
             format='json'
         )
@@ -523,7 +523,7 @@ class ChangePasswordEndpointTests(TestCase):
     def setUp(self):
         """Set up test data."""
         self.client = APIClient()
-        self.change_password_url = '/api/auth/change-password/'
+        self.change_password_url = '/api/users/change-password/'
 
         self.email = 'change@uni.edu'
         self.old_password = 'OldPass123!'
@@ -537,7 +537,7 @@ class ChangePasswordEndpointTests(TestCase):
 
         # Get token
         login_response = self.client.post(
-            '/api/auth/login/',
+            '/api/users/login/',
             {'email': self.email, 'password': self.old_password},
             format='json'
         )
@@ -601,7 +601,7 @@ class ChangePasswordEndpointTests(TestCase):
 
         # Try logging in with new password
         login_response = self.client.post(
-            '/api/auth/login/',
+            '/api/users/login/',
             {'email': self.email, 'password': self.new_password},
             format='json'
         )

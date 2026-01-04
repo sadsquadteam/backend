@@ -15,12 +15,12 @@ from users.views import (
 app_name = 'users'
 
 urlpatterns = [
-    # Authentication endpoints
-    path('auth/register/', register, name='register'),
-    path('auth/verify/', verify_email, name='verify'),
-    path('auth/login/', login, name='login'),
-    path('auth/refresh/', refresh_token, name='refresh'),
-    path('auth/logout/', logout, name='logout'),
-    path('auth/profile/', profile, name='profile'),
-    path('auth/change-password/', change_password, name='change-password'),
+    # User authentication and profile endpoints
+    path('register/', register, name='register'),
+    path('verify/', verify_email, name='verify'),
+    path('login/', login, name='login'),
+    path('refresh/', refresh_token, name='refresh'),
+    path('logout/', logout, name='logout'),
+    path('profile/', profile, name='profile'),
+    path('change-password/', change_password, name='change-password'),
 ]

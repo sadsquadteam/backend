@@ -32,7 +32,7 @@ def register(request):
     """
     Register a new user and send OTP to email.
 
-    POST /api/auth/register/
+    POST /api/users/register/
     Body: { "email": "user@uni.edu" }
     """
     serializer = UserRegistrationSerializer(data=request.data)
@@ -54,7 +54,7 @@ def verify_email(request):
     """
     Verify email with OTP and set password.
 
-    POST /api/auth/verify/
+    POST /api/users/verify/
     Body: { "email": "user@uni.edu", "otp": "123456", "password": "SecurePass123!" }
     """
     serializer = OTPVerificationSerializer(data=request.data)
@@ -76,7 +76,7 @@ def login(request):
     """
     Login user and return JWT tokens.
 
-    POST /api/auth/login/
+    POST /api/users/login/
     Body: { "email": "user@uni.edu", "password": "SecurePass123!" }
     """
     serializer = LoginSerializer(data=request.data)
@@ -104,7 +104,7 @@ def refresh_token(request):
     """
     Refresh access token using refresh token.
 
-    POST /api/auth/refresh/
+    POST /api/users/refresh/
     Body: { "refresh": "refresh_token_here" }
     """
     refresh_token_str = request.data.get('refresh')
@@ -145,7 +145,7 @@ def logout(request):
     """
     Logout user by blacklisting refresh token.
 
-    POST /api/auth/logout/
+    POST /api/users/logout/
     Body: { "refresh": "refresh_token_here" }
     Headers: Authorization: Bearer <access_token>
     """
@@ -188,7 +188,7 @@ def profile(request):
     """
     Get current user profile.
 
-    GET /api/auth/profile/
+    GET /api/users/profile/
     Headers: Authorization: Bearer <access_token>
     """
     user = request.user
@@ -202,7 +202,7 @@ def change_password(request):
     """
     Change user password.
 
-    PUT /api/auth/change-password/
+    PUT /api/users/change-password/
     Body: { "old_password": "OldPass123!", "new_password": "NewPass123!" }
     Headers: Authorization: Bearer <access_token>
     """
