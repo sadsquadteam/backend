@@ -10,7 +10,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
-import datetime
+from datetime import datetime as dt
 
 from users.models import TokenBlacklist
 from users.serializers import (
@@ -37,11 +37,11 @@ def register(request):
     """
     serializer = UserRegistrationSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
+        user = serializer.save()
         return Response(
             {
                 'message': 'OTP sent to email. Please verify your email.',
-                'email': serializer.validated_data['email']
+                'email': user.email
             },
             status=status.HTTP_200_OK
         )
@@ -84,8 +84,16 @@ def login(request):
         tokens = serializer.save()
         return Response(tokens, status=status.HTTP_200_OK)
 
+    # Distinguish between validation errors (400) and auth errors (401)
+    errors = serializer.errors
+
+    # If it's a missing/invalid field error, return 400
+    if any(key in errors for key in ['email', 'password']):
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # Otherwise it's an authentication error, return 401
     return Response(
-        serializer.errors or {'non_field_errors': ['Invalid email or password.']},
+        errors or {'non_field_errors': ['Invalid email or password.']},
         status=status.HTTP_401_UNAUTHORIZED
     )
 
@@ -152,9 +160,9 @@ def logout(request):
     try:
         refresh = RefreshToken(refresh_token_str)
         # Get expiry time from token
-        expires_at = timezone.datetime.fromtimestamp(
+        expires_at = dt.fromtimestamp(
             refresh['exp'],
-            tz=timezone.utc
+            tz=timezone.UTC
         )
 
         # Add to blacklist

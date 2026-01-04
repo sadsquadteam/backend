@@ -2,14 +2,15 @@
 Serializers for user authentication.
 """
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.utils import verify_otp, store_otp, generate_otp, send_otp_email
+from users.validators import ComplexPasswordValidator
 
 CustomUser = get_user_model()
+password_validator = ComplexPasswordValidator()
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -21,21 +22,9 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at')
 
 
-class UserRegistrationSerializer(serializers.ModelSerializer):
-    """Serializer for user registration (step 1: enter email)."""
-    password = serializers.CharField(write_only=True, required=True)
-
-    class Meta:
-        model = CustomUser
-        fields = ('email', 'password')
-
-    def validate_password(self, value):
-        """Validate password strength."""
-        try:
-            validate_password(value)
-        except DjangoValidationError as e:
-            raise serializers.ValidationError(e.messages)
-        return value
+class UserRegistrationSerializer(serializers.Serializer):
+    """Serializer for user registration (step 1: enter email only)."""
+    email = serializers.EmailField(required=True)
 
     def validate_email(self, value):
         """Validate email uniqueness."""
@@ -46,12 +35,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Create user and send OTP."""
         email = validated_data['email']
-        password = validated_data['password']
 
-        # Create user with temporary password
+        # Create user with temporary password (will be set during verification)
         user = CustomUser.objects.create_user(
             email=email,
-            password=password,
+            password='temp_password_' + email,  # Temporary, will be overwritten
             is_verified=False
         )
 
@@ -64,17 +52,17 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class OTPVerificationSerializer(serializers.Serializer):
-    """Serializer for OTP verification (step 2: verify email with OTP)."""
+    """Serializer for OTP verification (step 2: verify email with OTP and set password)."""
     email = serializers.EmailField(required=True)
     otp = serializers.CharField(max_length=10, required=True)
-    password = serializers.CharField(write_only=True, required=True)
+    password = serializers.CharField(write_only=True, required=True, min_length=8)
 
     def validate_password(self, value):
-        """Validate password strength."""
+        """Validate password complexity."""
         try:
-            validate_password(value)
+            password_validator.validate(value)
         except DjangoValidationError as e:
-            raise serializers.ValidationError(e.messages)
+            raise serializers.ValidationError(e.message if hasattr(e, 'message') else str(e.messages[0]) if e.messages else 'Invalid password')
         return value
 
     def validate(self, data):
@@ -124,16 +112,28 @@ class LoginSerializer(serializers.Serializer):
         email = data.get('email')
         password = data.get('password')
 
+        # Check if fields are provided
+        if not email:
+            raise serializers.ValidationError({'email': 'Email is required.'})
+        if not password:
+            raise serializers.ValidationError({'password': 'Password is required.'})
+
         try:
             user = CustomUser.objects.get(email=email)
         except CustomUser.DoesNotExist:
-            raise serializers.ValidationError('Invalid email or password.')
+            raise serializers.ValidationError(
+                {'non_field_errors': ['Invalid email or password.']}
+            )
 
         if not user.check_password(password):
-            raise serializers.ValidationError('Invalid email or password.')
+            raise serializers.ValidationError(
+                {'non_field_errors': ['Invalid email or password.']}
+            )
 
         if not user.is_active:
-            raise serializers.ValidationError('This user account is inactive.')
+            raise serializers.ValidationError(
+                {'non_field_errors': ['This user account is inactive.']}
+            )
 
         data['user'] = user
         return data
@@ -166,14 +166,14 @@ class RefreshTokenSerializer(serializers.Serializer):
 class ChangePasswordSerializer(serializers.Serializer):
     """Serializer for changing password."""
     old_password = serializers.CharField(write_only=True, required=True)
-    new_password = serializers.CharField(write_only=True, required=True)
+    new_password = serializers.CharField(write_only=True, required=True, min_length=8)
 
     def validate_new_password(self, value):
         """Validate new password strength."""
         try:
-            validate_password(value)
+            password_validator.validate(value)
         except DjangoValidationError as e:
-            raise serializers.ValidationError(e.messages)
+            raise serializers.ValidationError(e.message if hasattr(e, 'message') else str(e.messages[0]) if e.messages else 'Invalid password')
         return value
 
     def validate(self, data):
