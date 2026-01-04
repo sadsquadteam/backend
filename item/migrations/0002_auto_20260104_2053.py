@@ -19,7 +19,7 @@ def create_sample_tags(apps, schema_editor):
     ]
     tag_model = apps.get_model('item', 'Tag')
     for name in tag_names:
-        tag_model.objects.create(name=name)
+        tag_model.objects.create(title=name)
 
 
 class Migration(migrations.Migration):
