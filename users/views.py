@@ -37,11 +37,11 @@ def register(request):
     """
     serializer = UserRegistrationSerializer(data=request.data)
     if serializer.is_valid():
-        user = serializer.save()
+        result = serializer.save()
         return Response(
             {
                 'message': 'OTP sent to email. Please verify your email.',
-                'email': user.email
+                'email': result['email']
             },
             status=status.HTTP_200_OK
         )

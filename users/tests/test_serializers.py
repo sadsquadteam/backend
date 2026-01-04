@@ -88,15 +88,19 @@ class UserRegistrationSerializerTests(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn('email', serializer.errors)
 
-    def test_registration_creates_user_with_is_verified_false(self):
-        """Test that registration creates user with is_verified=False."""
+    def test_registration_does_not_create_user(self):
+        """Test that registration does NOT create a user (user created during verification)."""
         data = {'email': 'newuser@uni.edu'}
         serializer = UserRegistrationSerializer(data=data)
         self.assertTrue(serializer.is_valid())
 
-        user = serializer.save()
-        self.assertFalse(user.is_verified)
-        self.assertEqual(user.email, 'newuser@uni.edu')
+        result = serializer.save()
+        # Should return a dict with email, not a user object
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result['email'], 'newuser@uni.edu')
+        # User should NOT exist yet
+        with self.assertRaises(CustomUser.DoesNotExist):
+            CustomUser.objects.get(email='newuser@uni.edu')
 
     def test_registration_without_email(self):
         """Test registration without email."""
@@ -116,11 +120,7 @@ class OTPVerificationSerializerTests(TestCase):
         self.otp = '123456'
         self.password = 'ValidPass123!'
 
-        # Create user and store OTP in cache
-        self.user = CustomUser.objects.create_user(
-            email=self.email,
-            password='temp_password'
-        )
+        # Store OTP in cache (user will be created during verification)
         cache.set(f'otp_{self.email}', {
             'otp': self.otp,
             'attempts': 0,
@@ -159,16 +159,6 @@ class OTPVerificationSerializerTests(TestCase):
 
         data = {
             'email': self.email,
-            'otp': self.otp,
-            'password': self.password
-        }
-        serializer = OTPVerificationSerializer(data=data)
-        self.assertFalse(serializer.is_valid())
-
-    def test_verification_with_nonexistent_user(self):
-        """Test verification with non-existent user."""
-        data = {
-            'email': 'nonexistent@uni.edu',
             'otp': self.otp,
             'password': self.password
         }

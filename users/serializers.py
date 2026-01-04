@@ -33,22 +33,16 @@ class UserRegistrationSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        """Create user and send OTP."""
+        """Send OTP to email (user will be created after verification)."""
         email = validated_data['email']
-
-        # Create user with temporary password (will be set during verification)
-        user = CustomUser.objects.create_user(
-            email=email,
-            password='temp_password_' + email,  # Temporary, will be overwritten
-            is_verified=False
-        )
 
         # Generate and send OTP
         otp = generate_otp(6)
         store_otp(email, otp, ttl=300)  # 5 minutes
         send_otp_email(email, otp)
 
-        return user
+        # Return email only (user will be created during verification)
+        return {'email': email}
 
 
 class OTPVerificationSerializer(serializers.Serializer):
@@ -66,33 +60,30 @@ class OTPVerificationSerializer(serializers.Serializer):
         return value
 
     def validate(self, data):
-        """Verify OTP and user existence."""
+        """Verify OTP."""
         email = data.get('email')
         otp = data.get('otp')
-
-        # Check if user exists
-        try:
-            user = CustomUser.objects.get(email=email)
-        except CustomUser.DoesNotExist:
-            raise serializers.ValidationError('User with this email does not exist.')
 
         # Verify OTP
         is_valid, message = verify_otp(email, otp)
         if not is_valid:
             raise serializers.ValidationError({'otp': message})
 
-        data['user'] = user
+        # Store email for create() method (user will be created now)
+        data['email'] = email
         return data
 
     def create(self, validated_data):
-        """Set password and mark user as verified."""
-        user = validated_data['user']
+        """Create user with verified email and password."""
+        email = validated_data['email']
         password = validated_data['password']
 
-        # Update user
-        user.set_password(password)
-        user.is_verified = True
-        user.save()
+        # Create user (first time, after OTP verification)
+        user = CustomUser.objects.create_user(
+            email=email,
+            password=password,
+            is_verified=True
+        )
 
         return user
 

@@ -49,14 +49,15 @@ class UserRegistrationEndpointTests(TestCase):
         self.assertIsNotNone(otp_data)
         self.assertIn('otp', otp_data)
 
-    def test_register_creates_inactive_user(self):
-        """Test that registration creates an inactive (unverified) user."""
+    def test_register_does_not_create_user(self):
+        """Test that registration does NOT create a user (user created after verification)."""
         data = {'email': 'inactive@uni.edu'}
         response = self.client.post(self.register_url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        user = CustomUser.objects.get(email='inactive@uni.edu')
-        self.assertFalse(user.is_verified)
+        # User should NOT exist yet
+        with self.assertRaises(CustomUser.DoesNotExist):
+            CustomUser.objects.get(email='inactive@uni.edu')
 
     def test_register_with_invalid_email_format(self):
         """Test registration with invalid email format."""
@@ -114,13 +115,7 @@ class OTPVerificationEndpointTests(TestCase):
         self.otp = '123456'
         self.password = 'ValidPass123!'
 
-        # Create user
-        self.user = CustomUser.objects.create_user(
-            email=self.email,
-            password='temp_password'
-        )
-
-        # Store OTP in cache
+        # Store OTP in cache (user will be created during verification)
         cache.set(f'otp_{self.email}', {
             'otp': self.otp,
             'attempts': 0,
@@ -187,17 +182,6 @@ class OTPVerificationEndpointTests(TestCase):
 
         data = {
             'email': self.email,
-            'otp': self.otp,
-            'password': self.password
-        }
-        response = self.client.post(self.verify_url, data, format='json')
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_verify_with_nonexistent_user(self):
-        """Test verification with non-existent user."""
-        data = {
-            'email': 'nonexistent@uni.edu',
             'otp': self.otp,
             'password': self.password
         }
