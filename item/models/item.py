@@ -14,7 +14,7 @@ class Item(models.Model):
     creator = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     description = models.TextField()
-    image = models.ImageField(upload_to='items/')
+    image = models.ImageField(upload_to='media/items/', null=True, blank=True)
     tags = models.ManyToManyField(to=Tag)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)

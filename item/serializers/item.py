@@ -13,5 +13,4 @@ class ItemSerializer(serializers.ModelSerializer):
             "image",
             "tags",
             "status",
-            "creator",
         ]
