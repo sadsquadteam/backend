@@ -29,9 +29,9 @@ def send_otp_email(email, otp):
 
     Note:
         Uses Django's email backend configured in settings.
-        For development, uses console backend that prints to stdout.
     """
     from django.core.mail import send_mail
+    from django.conf import settings
 
     subject = 'Your OTP for UniFound Account Verification'
     message = f'''
@@ -50,7 +50,7 @@ def send_otp_email(email, otp):
     send_mail(
         subject,
         message,
-        'noreply@unifound.local',
+        settings.DEFAULT_FROM_EMAIL,
         [email],
         fail_silently=True,
     )

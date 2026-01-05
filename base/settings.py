@@ -180,8 +180,15 @@ SIMPLE_JWT = {
     'JTI_IN_BLACKLIST_LOOKUP': False,
 }
 
-# Email Configuration (Console Backend for Development)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Email Configuration (Gmail SMTP with App Password)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'lostandfoundg6@gmail.com'
+EMAIL_HOST_PASSWORD = 'voaq vpnj mjms xxhq'
+DEFAULT_FROM_EMAIL = 'lostandfoundg6@gmail.com'
+SERVER_EMAIL = 'lostandfoundg6@gmail.com'
 
 # Cache Configuration
 CACHES = {
