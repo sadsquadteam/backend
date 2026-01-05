@@ -10,6 +10,8 @@ class ItemSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "description",
+            "latitude",
+            "longitude",
             "image",
             "tags",
             "status",
