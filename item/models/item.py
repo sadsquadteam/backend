@@ -16,7 +16,7 @@ class Item(models.Model):
     description = models.TextField()
     latitude = models.FloatField()
     longitude = models.FloatField()
-    image = models.ImageField(upload_to='media/items/', null=True, blank=True)
+    image = models.ImageField(upload_to='items/', null=True, blank=True)
     tags = models.ManyToManyField(to=Tag)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
