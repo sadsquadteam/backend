@@ -13,7 +13,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "user",
             "item",
             "text",
-            "parent",
+            "replies_to",
             "created_at",
         ]
         read_only_fields = [

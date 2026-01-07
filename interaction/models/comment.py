@@ -15,7 +15,7 @@ class Comment(models.Model):
         on_delete=models.CASCADE,
         related_name="comments",
     )
-    parent = models.ForeignKey(
+    replies_to = models.ForeignKey(
         to='self',
         on_delete=models.CASCADE,
         related_name="replies",
