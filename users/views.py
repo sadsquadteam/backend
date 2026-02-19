@@ -3,8 +3,8 @@ API views for user authentication.
 """
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from django.core.cache import cache
-from rest_framework import status
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import status, serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -19,13 +19,14 @@ from users.serializers import (
     OTPVerificationSerializer,
     LoginSerializer,
     ChangePasswordSerializer,
-    LogoutSerializer,
 )
-from users.utils import verify_otp, store_otp, generate_otp, send_otp_email
 
 CustomUser = get_user_model()
 
 
+@extend_schema(
+    request=UserRegistrationSerializer,
+)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
@@ -70,6 +71,9 @@ def verify_email(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    request=LoginSerializer,
+)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
@@ -98,6 +102,14 @@ def login(request):
     )
 
 
+@extend_schema(
+    request=inline_serializer(
+        name='RefreshRequest',
+        fields={
+            'refresh': serializers.CharField(),
+        }
+    ),
+)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def refresh_token(request):
