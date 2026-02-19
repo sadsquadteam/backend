@@ -14,3 +14,6 @@ class CommentModelViewSet(ModelViewSet):
             return Comment.objects.all()
         else:
             return self.request.user.comments.all()
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
