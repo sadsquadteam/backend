@@ -8,7 +8,7 @@ urlpatterns = [
             "get": "list",
             "post": "create",
         }
-    )),
+    ), name="comment-list"),
     path("comments/<int:pk>/", CommentModelViewSet.as_view(
         {
             "get": "retrieve",
@@ -16,5 +16,5 @@ urlpatterns = [
             "patch": "partial_update",
             "delete": "destroy",
         }
-    )),
+    ), name="comment-detail"),
 ]
