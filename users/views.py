@@ -10,7 +10,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
-from datetime import datetime as dt
+from datetime import datetime as dt, timezone as dt_timezone
 
 from users.models import TokenBlacklist
 from users.serializers import (
@@ -174,7 +174,7 @@ def logout(request):
         # Get expiry time from token
         expires_at = dt.fromtimestamp(
             refresh['exp'],
-            tz=timezone.UTC
+            tz=dt_timezone.utc
         )
 
         # Add to blacklist

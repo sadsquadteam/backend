@@ -1,128 +1,167 @@
 # UniFound Backend API
 
-JWT-based authentication system using Django REST Framework.
+Django REST backend for authentication, lost/found items, comments, and reports.
 
 ## Quick Start
-
 ```bash
-# Setup
-python3.13 -m venv venv_py313
-source venv_py313/bin/activate
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
-
-# Run tests (95 tests total)
-python manage.py test users.tests.test_models users.tests.test_serializers users.tests.test_views
-
-# Run server
-python manage.py runserver  # http://localhost:8000/
+python manage.py runserver
 ```
 
-## API Endpoints
+Local base URL: `http://127.0.0.1:8000`
 
-Base URL: `/api/users/`
+## API Docs
+- Swagger: `http://127.0.0.1:8000/api/docs/`
+- ReDoc: `http://127.0.0.1:8000/api/redoc/`
+- OpenAPI: `http://127.0.0.1:8000/api/schema/`
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/register/` | Register user, send OTP to email | No |
-| POST | `/verify/` | Verify OTP, set password | No |
-| POST | `/login/` | Login, get JWT tokens | No |
-| POST | `/refresh/` | Refresh access token | No |
-| POST | `/logout/` | Logout, blacklist token | Yes |
-| GET | `/profile/` | Get user profile | Yes |
-| PUT | `/change-password/` | Change password | Yes |
+## Auth Model
+- JWT bearer token:
+  - `Authorization: Bearer <access_token>`
+- Access token lifetime: `15 min`
+- Refresh token lifetime: `7 days`
 
-## Authentication Flow
+## Main API Groups
+- `api/users/` -> registration, verification, login, token refresh/logout, profile, password change
+- `api/items/` -> item CRUD + tags
+- `api/interactions/` -> comments + reports
 
-1. Register → Email + OTP sent
-2. Verify → Confirm OTP + set password
-3. Login → Get access + refresh tokens
-4. Use API → Header: `Authorization: Bearer <access_token>`
-5. Refresh → Use refresh token when access expires
-6. Logout → Blacklist refresh token
+---
 
-## API Documentation
+## Users API
+Base path: `/api/users/`
 
-- **Swagger UI**: http://localhost:8000/api/docs/
-- **ReDoc**: http://localhost:8000/api/redoc/
-- **OpenAPI Schema**: http://localhost:8000/api/schema/
+- `POST register/` (public)
+  - body: `{ "email": "user@example.com" }`
+  - sends OTP to email (user is created on verify)
+- `POST verify/` (public)
+  - body: `{ "email": "user@example.com", "otp": "123456", "password": "SecurePass123!" }`
+  - verifies OTP and creates verified user
+- `POST login/` (public)
+  - body: `{ "email": "user@example.com", "password": "SecurePass123!" }`
+  - response includes `access` and `refresh`
+- `POST refresh/` (public)
+  - body: `{ "refresh": "<refresh_token>" }`
+  - returns new access token
+- `POST logout/` (auth)
+  - body: `{ "refresh": "<refresh_token>" }`
+  - blacklists refresh token
+- `GET profile/` (auth)
+- `PUT change-password/` (auth)
+  - body: `{ "old_password": "...", "new_password": "..." }`
 
-## Configuration
+Password policy:
+- min 8 chars, uppercase, lowercase, digit, special char from `!@#$%^&*`
 
-**Password Requirements:**
-- 8+ characters, 1 uppercase, 1 lowercase, 1 digit, 1 special char (!@#$%^&*)
-- Example: `SecurePass123!`
+---
 
-**Token Lifetimes:**
-- Access Token: 15 minutes
-- Refresh Token: 7 days
-- OTP Valid: 5 minutes, Max 3 attempts
+## Items API
+Base path: `/api/items/`
 
-**User Model Fields:**
-- `email` (unique, login field)
-- `password` (hashed PBKDF2)
-- `is_verified` (email verified)
-- `is_active` (account status)
-- `created_at` (timestamp)
+### Endpoints
+- `GET /` (public): list items
+- `POST /` (auth): create item
+- `GET /{id}/` (public): retrieve item
+- `PUT/PATCH /{id}/` (auth, owner-only): update
+- `DELETE /{id}/` (auth, owner-only): delete
+- `GET /tags/` (public): list tags
 
-## Security
+### Item fields
+```json
+{
+  "id": 1,
+  "title": "Lost Wallet",
+  "description": "Near library",
+  "latitude": 35.7,
+  "longitude": 51.3,
+  "image": null,
+  "tags": [1, 5],
+  "status": "lost"
+}
+```
 
-- JWT HS256 with SECRET_KEY signing
-- PBKDF2 password hashing
-- OTP email verification with attempt limiting
-- Token blacklisting on logout (indexed)
-- Proper HTTP codes (400 validation, 401 auth)
-- No sensitive info in error messages
+### List filters/query
+- `status=lost|found|delivered`
+- `creator=<user_id>`
+- `tags=<tag_id>`
+- `tags__title=<exact>`
+- `tags__title__icontains=<text>`
+- `created_at__gt|gte|lt|lte=<datetime>`
+- `search=<text>` on `title` and `description`
+- `ordering=created_at` or `ordering=-created_at`
+
+Notes:
+- `creator` is set automatically from the authenticated user.
+- owner-only update/delete returns `404` for non-owner.
+
+---
+
+## Interactions API
+Base path: `/api/interactions/`
+
+### Comments
+- `GET comments/` (auth)
+- `POST comments/` (auth)
+- `GET comments/{id}/` (auth)
+- `PUT/PATCH comments/{id}/` (auth, owner-only)
+- `DELETE comments/{id}/` (auth, owner-only)
+
+Create comment body:
+```json
+{
+  "item": 12,
+  "text": "I think this is mine",
+  "replies_to": null
+}
+```
+
+Response fields: `id`, `user`, `item`, `text`, `replies_to`, `created_at`
+
+### Reports
+- `POST reports/` (auth)
+
+Create report body (exactly one target):
+```json
+{ "item": 12, "reason": "spam" }
+```
+or
+```json
+{ "comment": 45, "reason": "abuse" }
+```
+
+Validation rules:
+- provide exactly one target (`item` xor `comment`)
+- duplicate report from same user on same target is rejected
+
+Moderation rule:
+- when a target gets more than 5 reports, it is auto-deleted on the 6th report
+  - item target -> item deleted
+  - comment target -> comment deleted
+
+---
 
 ## Status Codes
+- `200` success
+- `201` created
+- `204` deleted
+- `400` validation error
+- `401` unauthorized
+- `404` not found / owner-scoped missing
 
-- `200` - Success
-- `400` - Validation error
-- `401` - Authentication error
-- `404` - Not found
+## Frontend Integration Notes
+- DRF pagination is enabled globally (`count`, `next`, `previous`, `results`).
+- CORS currently allows:
+  - `http://localhost:5173`
+  - `http://127.0.0.1:5173`
+- Use `multipart/form-data` for item create/update when uploading `image`.
 
-## Architecture
-
-```
-users/
-├── models.py          # CustomUser, TokenBlacklist
-├── serializers.py     # Request/response validation
-├── views.py           # 7 API endpoints
-├── urls.py            # Routing (/api/users/...)
-├── validators.py      # Password complexity validation
-├── utils.py           # OTP generation/verification
-├── admin.py           # Admin panel config
-└── tests/             # 95 unit tests
-    ├── test_models.py
-    ├── test_serializers.py
-    └── test_views.py
-```
-
-## Production Setup
-
-Before deployment:
-1. Set `DEBUG = False` in settings
-2. Move `SECRET_KEY` to `.env` (use environment variable)
-3. Configure `ALLOWED_HOSTS` with your domain
-4. Setup email backend (SMTP, not console)
-5. Use production database (not SQLite)
-6. Enable HTTPS/SSL
-7. Consider rate limiting middleware
-
-## curl Examples
-
-```bash
-# Register
-curl -X POST http://localhost:8000/api/users/register/ \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@uni.edu"}'
-
-# Login
-curl -X POST http://localhost:8000/api/users/login/ \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@uni.edu","password":"SecurePass123!"}'
-
-# Get Profile
-curl -X GET http://localhost:8000/api/users/profile/ \
-  -H "Authorization: Bearer <access_token>"
-```
+## Recommended Client Flow
+1. Register email (`/api/users/register/`)
+2. Verify OTP + password (`/api/users/verify/`)
+3. Login (`/api/users/login/`)
+4. Call protected APIs with access token
+5. Refresh token when needed (`/api/users/refresh/`)
+6. Logout (`/api/users/logout/`)
