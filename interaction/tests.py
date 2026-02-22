@@ -1,7 +1,7 @@
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from django.contrib.auth import get_user_model
 
 from interaction.models.comment import Comment
 from item.models import Item
@@ -13,12 +13,10 @@ class CommentViewSetTests(APITestCase):
 
     def setUp(self):
         self.user1 = User.objects.create_user(
-            email="user1@gmail.com",
-            password="password123"
+            email="user1@gmail.com", password="password123"
         )
         self.user2 = User.objects.create_user(
-            email="user2@gmail.com",
-            password="password123"
+            email="user2@gmail.com", password="password123"
         )
 
         self.item = Item.objects.create(title="Test Item", creator=self.user1)
@@ -47,10 +45,7 @@ class CommentViewSetTests(APITestCase):
     def test_create_comment_assigns_user(self):
         self.client.force_authenticate(self.user1)
 
-        data = {
-            "item": self.item.id,
-            "text": "New comment"
-        }
+        data = {"item": self.item.id, "text": "New comment"}
 
         response = self.client.post(self.list_url, data)
 
@@ -90,7 +85,7 @@ class CommentViewSetTests(APITestCase):
         data = {
             "item": self.item.id,
             "text": "Reply comment",
-            "replies_to": self.comment2.id
+            "replies_to": self.comment2.id,
         }
 
         response = self.client.post(self.list_url, data)
@@ -106,7 +101,7 @@ class CommentViewSetTests(APITestCase):
         data = {
             "item": self.item.id,
             "text": "Attempt override timestamp",
-            "created_at": "2000-01-01T00:00:00Z"
+            "created_at": "2000-01-01T00:00:00Z",
         }
 
         response = self.client.post(self.list_url, data)
