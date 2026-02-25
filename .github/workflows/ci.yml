@@ -55,4 +55,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/lost-and-found-backend:latest
+          tags: ftmhd/sadsquad-back:latest
